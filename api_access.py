@@ -1,6 +1,9 @@
 from googleapiclient.discovery import build
 from functools import lru_cache
-def authenticate_api(api_key):
+import yfinance
+
+
+def authenticate_api(api_key: int) -> 'CustomSearchEngine' | None: # type: ignore
     """Authenticates the Google Custom Search API."""
     service = build("customsearch", "v1", developerKey=api_key)
     try:
@@ -11,7 +14,11 @@ def authenticate_api(api_key):
         return None
 
 @lru_cache(maxsize=256)
-def google_search():
+def google_search() -> list[dict]| None:
+    """
+        Generates the articles according to the stock ticker, the dateRestriction, number of articles
+        Uses the custom search engine created by GoogleAPI
+    """
     service = authenticate_api(input_result("What is your API key? "))
     search_engine_id = "x"
     if not service:
@@ -32,7 +39,11 @@ def google_search():
         print(f"Error fetching search results: {e}")
         return []
     
-def input_result(question):
+def input_result(question) -> int | str:
+    """
+        Input function with error handling :0
+        Validates date range, number of articles
+    """
     while True:
         response = input(question)
 
@@ -58,5 +69,17 @@ def input_result(question):
 
         # For other inputs, return directly
         else:
-            return response
+            if is_valid_ticker(response):
+                return response
+            else:
+                print(f"Ticker - {response}, is not a valid ticker symbol.")
+                
+        
+def is_valid_ticker(ticker):
+  try:
+    yfinance.Ticker(ticker).info
+    return True
+  except Exception as e:
+    print(f"Error fetching ticker info: {e}")
+    return False
     
